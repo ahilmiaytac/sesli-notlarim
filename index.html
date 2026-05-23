@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Sesli Notlarım</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f4;
+    --bg3: #eeeeec;
+    --text: #1a1a1a;
+    --text2: #6b6b6b;
+    --text3: #aaaaaa;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --info-bg: #e6f1fb;
+    --info-text: #185fa5;
+    --success: #3b6d11;
+    --warning: #ba7517;
+    --danger: #a32d2d;
+    --danger-bg: #fcebeb;
+    --radius: 10px;
+    --radius-sm: 8px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a;
+      --bg2: #252525;
+      --bg3: #2f2f2f;
+      --text: #f0f0f0;
+      --text2: #a0a0a0;
+      --text3: #666666;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.18);
+      --info-bg: #042c53;
+      --info-text: #85b7eb;
+      --success: #97c459;
+      --warning: #ef9f27;
+      --danger: #f09595;
+      --danger-bg: #501313;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  #header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--bg2);
+    position: sticky; top: 0; z-index: 10;
+  }
+  #header-title { font-size: 16px; font-weight: 600; }
+  #settings-btn { background: none; border: none; cursor: pointer; color: var(--text2); font-size: 22px; padding: 4px; }
+
+  .screen { display: none; flex: 1; flex-direction: column; padding-bottom: 70px; }
+  .screen.active { display: flex; }
+
+  /* MIC */
+  #mic-area {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 36px 16px 20px; gap: 14px;
+  }
+
+  #big-mic {
+    width: 100px; height: 100px; border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    background: var(--bg2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s;
+    position: relative;
+  }
+  #big-mic:active { transform: scale(0.93); }
+  #big-mic.recording {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+  }
+  #big-mic.recording::after {
+    content: '';
+    position: absolute;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    border: 2px solid var(--danger);
+    opacity: 0;
+    animation: ripple 1.2s infinite;
+  }
+  @keyframes ripple {
+    0% { transform: scale(0.85); opacity: 0.6; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+  #big-mic i { font-size: 40px; color: var(--text2); }
+  #big-mic.recording i { color: var(--danger); }
+
+  #mic-hint { font-size: 14px; color: var(--text2); text-align: center; }
+  #mic-status {
+    font-size: 14px; font-weight: 500;
+    min-height: 22px; text-align: center;
+    padding: 0 16px;
+  }
+  .processing { color: var(--warning); }
+  .success-c { color: var(--success); }
+  .error-c { color: var(--danger); }
+
+  #or-divider {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 20px; width: 100%;
+  }
+  #or-divider::before, #or-divider::after {
+    content: ''; flex: 1; height: 0.5px; background: var(--border);
+  }
+  #or-divider span { font-size: 12px; color: var(--text3); }
+
+  #text-row { display: flex; gap: 8px; padding: 0 16px; width: 100%; }
+  #text-input {
+    flex: 1; height: 48px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 0 14px; font-size: 15px;
+    background: var(--bg2); color: var(--text);
+    font-family: inherit;
+  }
+  #send-btn {
+    height: 48px; padding: 0 18px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    background: var(--bg2); cursor: pointer;
+    font-size: 14px; color: var(--text);
+    font-family: inherit; font-weight: 500;
+    white-space: nowrap;
+  }
+  #send-btn:disabled { opacity: 0.4; }
+
+  #notion-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; margin: 12px 16px 0;
+    background: var(--bg2);
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+  }
+  .ndot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+  .ndot.on { background: var(--success); }
+  #notion-label { font-size: 12px; color: var(--text2); }
+
+  #recent-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 16px 8px;
+  }
+  #recent-header span { font-size: 12px; color: var(--text2); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  #all-notes-btn { background: none; border: none; cursor: pointer; font-size: 12px; color: var(--text2); font-family: inherit; padding: 0; }
+
+  #recent-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+
+  .note-card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+  .nc-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+  .nc-badge {
+    font-size: 11px; padding: 3px 9px; border-radius: 20px;
+    background: var(--info-bg); color: var(--info-text); font-weight: 500;
+  }
+  .nc-time { font-size: 11px; color: var(--text3); margin-left: auto; }
+  .nc-synced { font-size: 11px; color: var(--success); }
+  .nc-text { font-size: 14px; color: var(--text); line-height: 1.5; }
+
+  /* NOTES SCREEN */
+  #cat-tabs {
+    display: flex; overflow-x: auto; gap: 6px;
+    padding: 12px 16px; border-bottom: 0.5px solid var(--border);
+    scrollbar-width: none;
+  }
+  #cat-tabs::-webkit-scrollbar { display: none; }
+  .cat-tab {
+    flex-shrink: 0; padding: 7px 14px;
+    border-radius: 20px; font-size: 13px;
+    border: 0.5px solid var(--border);
+    background: var(--bg2); color: var(--text2);
+    cursor: pointer; font-family: inherit;
+  }
+  .cat-tab.active {
+    background: var(--bg); color: var(--text);
+    border-color: var(--border2); font-weight: 600;
+  }
+  #notes-list { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .empty { text-align: center; padding: 50px 20px; color: var(--text3); font-size: 14px; }
+
+  /* SETTINGS */
+  #settings-inner { padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+  .field-label { font-size: 13px; color: var(--text2); margin-bottom: 8px; font-weight: 500; }
+  .field-input {
+    width: 100%; height: 48px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 0 14px; font-size: 15px;
+    background: var(--bg2); color: var(--text);
+    font-family: inherit;
+  }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text2); letter-spacing: 0.04em; text-transform: uppercase; padding-bottom: 4px; border-bottom: 0.5px solid var(--border); }
+  .save-btn {
+    width: 100%; height: 50px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    background: var(--bg2); cursor: pointer;
+    font-size: 15px; color: var(--text);
+    font-family: inherit; font-weight: 600;
+  }
+  #settings-status { font-size: 13px; min-height: 18px; text-align: center; }
+
+  /* NAV */
+  #nav {
+    display: flex;
+    border-top: 0.5px solid var(--border);
+    background: var(--bg2);
+    position: fixed; bottom: 0; left: 0; right: 0;
+    max-width: 480px; margin: 0 auto;
+    z-index: 10;
+  }
+  .nav-btn {
+    flex: 1; padding: 10px 0 12px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    cursor: pointer; background: none; border: none;
+    color: var(--text3); transition: color 0.1s;
+    font-family: inherit;
+  }
+  .nav-btn i { font-size: 22px; }
+  .nav-btn span { font-size: 10px; font-weight: 500; }
+  .nav-btn.active { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <span id="header-title">Sesli Notlarım</span>
+  <button id="settings-btn"><i class="ti ti-settings"></i></button>
+</div>
+
+<!-- HOME -->
+<div class="screen active" id="home-screen">
+  <div id="mic-area">
+    <button id="big-mic"><i class="ti ti-microphone"></i></button>
+    <span id="mic-hint">Mikrofona bas ve konuş</span>
+    <span id="mic-status"></span>
+  </div>
+  <div id="notion-bar">
+    <span class="ndot" id="ndot"></span>
+    <span id="notion-label">Notion bağlı değil — Ayarlar'dan API anahtarını girin</span>
+  </div>
+  <div id="or-divider"><span>veya yazarak ekle</span></div>
+  <div id="text-row">
+    <input type="text" id="text-input" placeholder="Nota yaz..." />
+    <button id="send-btn">Ekle</button>
+  </div>
+  <div id="recent-header">
+    <span>Son Notlar</span>
+    <button id="all-notes-btn">Tümünü gör →</button>
+  </div>
+  <div id="recent-list"><div class="empty">Henüz not yok</div></div>
+</div>
+
+<!-- NOTES -->
+<div class="screen" id="notes-screen">
+  <div id="cat-tabs"></div>
+  <div id="notes-list"><div class="empty">Not yok</div></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="screen" id="settings-screen">
+  <div id="settings-inner">
+    <p class="section-title">Notion Bağlantısı</p>
+    <div>
+      <p class="field-label">API Anahtarı</p>
+      <input class="field-input" type="password" id="api-key-input" placeholder="ntn_..." />
+    </div>
+    <div>
+      <p class="field-label">Veritabanı ID</p>
+      <input class="field-input" type="text" id="db-id-input" placeholder="Veritabanı ID" />
+    </div>
+    <button class="save-btn" id="save-btn">Kaydet ve Bağlan</button>
+    <span id="settings-status"></span>
+    <p class="section-title" style="margin-top:8px">Hakkında</p>
+    <p style="font-size:13px;color:var(--text2);line-height:1.6">Sesli Notlarım — AI destekli not uygulaması. Konuşun, AI kategoriyi otomatik seçsin.</p>
+  </div>
+</div>
+
+<nav id="nav">
+  <button class="nav-btn active" data-screen="home-screen">
+    <i class="ti ti-microphone"></i>
+    <span>Not Al</span>
+  </button>
+  <button class="nav-btn" data-screen="notes-screen">
+    <i class="ti ti-notes"></i>
+    <span>Notlar</span>
+  </button>
+  <button class="nav-btn" data-screen="settings-screen">
+    <i class="ti ti-settings"></i>
+    <span>Ayarlar</span>
+  </button>
+</nav>
+
+<script>
+const CATS = [
+  { id:'kitap', label:'Kitap', subs:['Okuyacağım','Devam eden','Bitti'] },
+  { id:'youtube', label:'YouTube', subs:[] },
+  { id:'musteri', label:'İş Müşteri Şikayeti', subs:[] },
+  { id:'is-genel', label:'İş Genel', subs:[] },
+  { id:'arge', label:'İş ArGe', subs:[] },
+  { id:'kisisel', label:'Kişisel', subs:[] },
+  { id:'alisveris', label:'Alışveriş', subs:[] },
+  { id:'siparisler', label:'Siparişler', subs:[] },
+  { id:'yemek', label:'Yemek', subs:[] },
+  { id:'gezi', label:'Gezi', subs:[] },
+  { id:'film', label:'Film', subs:[] },
+  { id:'arac', label:'Araç Değişim', subs:[] },
+  { id:'hatirlatici', label:'Hatırlatıcı', subs:[] },
+  { id:'ayse', label:'Ayşe', subs:[] },
+  { id:'saglik', label:'Sağlık', subs:[] },
+  { id:'kredi', label:'Kredi Kartı', subs:[] },
+  { id:'cikarimlar', label:'Çıkarımlar', subs:[] },
+  { id:'fikirler', label:'İş Fikirleri', subs:[] },
+  { id:'yapay-zeka', label:'Yapay Zeka', subs:[] },
+  { id:'yapilacaklar', label:'Yapılacaklar', subs:[] },
+];
+
+const CLAUDE_API = 'https://sesli-notlarim-proxy.ahilmiaytac16.workers.dev';
+let notes = JSON.parse(localStorage.getItem('sn_notes') || '[]');
+let notionKey = localStorage.getItem('sn_nkey') || '';
+let notionDb = localStorage.getItem('sn_ndb') || '';
+let notionOk = false;
+let isRecording = false;
+let recognition = null;
+let selectedCat = 'all';
+
+if (notionKey) {
+  notionOk = true;
+  setNotionStatus(true, 'Notion bağlı');
+}
+if (notionDb) document.getElementById('db-id-input').value = notionDb;
+
+function saveNotes() { localStorage.setItem('sn_notes', JSON.stringify(notes)); }
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.screen === id));
+  if (id === 'notes-screen') buildCatTabs();
+}
+
+document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showScreen(b.dataset.screen)));
+document.getElementById('settings-btn').addEventListener('click', () => showScreen('settings-screen'));
+document.getElementById('all-notes-btn').addEventListener('click', () => showScreen('notes-screen'));
+
+function setNotionStatus(ok, msg) {
+  notionOk = ok;
+  document.getElementById('ndot').className = 'ndot' + (ok ? ' on' : '');
+  const lbl = document.getElementById('notion-label');
+  lbl.textContent = msg;
+  lbl.style.color = ok ? 'var(--success)' : 'var(--text2)';
+}
+
+document.getElementById('save-btn').addEventListener('click', () => {
+  const k = document.getElementById('api-key-input').value.trim();
+  const d = document.getElementById('db-id-input').value.trim();
+  if (!k) { showSettingsStatus('API anahtarı boş olamaz', 'error'); return; }
+  notionKey = k; notionDb = d;
+  localStorage.setItem('sn_nkey', k);
+  localStorage.setItem('sn_ndb', d);
+  setNotionStatus(true, 'Notion bağlı — notlar kaydedilecek');
+  showSettingsStatus('Kaydedildi!', 'success');
+  setTimeout(() => showScreen('home-screen'), 900);
+});
+
+function showSettingsStatus(msg, type) {
+  const el = document.getElementById('settings-status');
+  el.textContent = msg;
+  el.style.color = type === 'success' ? 'var(--success)' : 'var(--danger)';
+}
+
+function renderRecent() {
+  const el = document.getElementById('recent-list');
+  if (!notes.length) { el.innerHTML = '<div class="empty">Henüz not yok</div>'; return; }
+  el.innerHTML = '';
+  [...notes].reverse().slice(0, 5).forEach(n => el.appendChild(makeCard(n)));
+}
+
+function buildCatTabs() {
+  const tabs = document.getElementById('cat-tabs');
+  tabs.innerHTML = '';
+  const all = document.createElement('button');
+  all.className = 'cat-tab' + (selectedCat === 'all' ? ' active' : '');
+  all.textContent = 'Tümü';
+  all.addEventListener('click', () => { selectedCat = 'all'; buildCatTabs(); });
+  tabs.appendChild(all);
+  CATS.forEach(c => {
+    const cnt = notes.filter(n => n.catId === c.id).length;
+    if (cnt === 0) return;
+    const b = document.createElement('button');
+    b.className = 'cat-tab' + (selectedCat === c.id ? ' active' : '');
+    b.textContent = c.label + ' (' + cnt + ')';
+    b.addEventListener('click', () => { selectedCat = c.id; buildCatTabs(); });
+    tabs.appendChild(b);
+  });
+  renderNotesList();
+}
+
+function renderNotesList() {
+  const el = document.getElementById('notes-list');
+  const filtered = selectedCat === 'all' ? notes : notes.filter(n => n.catId === selectedCat);
+  if (!filtered.length) { el.innerHTML = '<div class="empty">Bu kategoride not yok</div>'; return; }
+  el.innerHTML = '';
+  [...filtered].reverse().forEach(n => el.appendChild(makeCard(n)));
+}
+
+function makeCard(n) {
+  const cat = CATS.find(c => c.id === n.catId);
+  const d = document.createElement('div');
+  d.className = 'note-card';
+  d.innerHTML = `<div class="nc-meta"><span class="nc-badge">${n.subCat || (cat ? cat.label : n.catId)}</span><span class="nc-time">${n.time}</span>${n.synced ? '<span class="nc-synced">✓ Notion</span>' : ''}</div><div class="nc-text">${n.text}</div>`;
+  return d;
+}
+
+async function addNote(text) {
+  if (!text.trim()) return;
+  const status = document.getElementById('mic-status');
+  const sendBtn = document.getElementById('send-btn');
+  sendBtn.disabled = true;
+  status.className = 'processing';
+  status.textContent = 'Kategori belirleniyor...';
+
+  const catList = CATS.map(c => `${c.id}: "${c.label}"${c.subs.length ? ' (alt: '+c.subs.join(', ')+')' : ''}`).join('\n');
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 100,
+        messages: [{ role: 'user', content: `Aşağıdaki not hangi kategoriye ait? Sadece JSON döndür, başka hiçbir şey yazma.\n\nNOT: "${text}"\n\nKATEGORİLER:\n${catList}\n\nJSON: {"catId": "id", "subCat": "alt veya null"}` }]
+      })
+    });
+    const data = await res.json();
+    let raw = data.content.map(b => b.text||'').join('').replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(raw);
+    const catId = parsed.catId || 'kisisel';
+    const subCat = parsed.subCat && parsed.subCat !== 'null' ? parsed.subCat : null;
+    const cat = CATS.find(c => c.id === catId);
+    const time = new Date().toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+
+    let synced = false;
+    if (notionOk && notionKey && notionDb) {
+      synced = await saveToNotion({ text, catId, subCat, time, cat });
+    }
+
+    const note = { text, catId, subCat, time, synced };
+    notes.push(note);
+    saveNotes();
+
+    status.className = 'success-c';
+    status.textContent = `→ ${cat ? cat.label : catId}${subCat ? ' › '+subCat : ''}${synced ? ' · Notion\'a kaydedildi' : ''}`;
+    document.getElementById('text-input').value = '';
+    renderRecent();
+    setTimeout(() => { status.textContent = ''; status.className = ''; }, 4000);
+  } catch(e) {
+    status.className = 'error-c';
+    status.textContent = 'Hata oluştu, tekrar deneyin';
+    console.error(e);
+  }
+  sendBtn.disabled = false;
+}
+
+async function saveToNotion(note) {
+  try {
+    const cat = note.cat;
+    await fetch('https://api.notion.com/v1/pages', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + notionKey,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        parent: { database_id: notionDb },
+        properties: {
+          Name: { title: [{ text: { content: note.text.slice(0, 100) } }] },
+          Kategori: { rich_text: [{ text: { content: cat ? cat.label : note.catId } }] },
+          'Alt Kategori': { rich_text: [{ text: { content: note.subCat || '' } }] },
+          Tarih: { rich_text: [{ text: { content: note.time } }] }
+        }
+      })
+    });
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+document.getElementById('send-btn').addEventListener('click', () => addNote(document.getElementById('text-input').value));
+document.getElementById('text-input').addEventListener('keydown', e => { if (e.key === 'Enter') addNote(e.target.value); });
+
+const micBtn = document.getElementById('big-mic');
+micBtn.addEventListener('click', () => {
+  if (isRecording) { recognition && recognition.stop(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('mic-status').className = 'error-c';
+    document.getElementById('mic-status').textContent = 'Tarayıcınız ses girişini desteklemiyor';
+    return;
+  }
+  recognition = new SR();
+  recognition.lang = 'tr-TR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.onstart = () => {
+    isRecording = true;
+    micBtn.classList.add('recording');
+    document.getElementById('mic-hint').textContent = 'Dinleniyor... (dur = tekrar bas)';
+    document.getElementById('mic-status').textContent = '';
+    document.getElementById('mic-status').className = '';
+  };
+  recognition.onresult = e => {
+    const t = e.results[0][0].transcript;
+    document.getElementById('text-input').value = t;
+    addNote(t);
+  };
+  recognition.onerror = (e) => {
+    isRecording = false;
+    micBtn.classList.remove('recording');
+    document.getElementById('mic-hint').textContent = 'Mikrofona bas ve konuş';
+    document.getElementById('mic-status').className = 'error-c';
+    document.getElementById('mic-status').textContent = 'Mikrofon hatası: ' + e.error;
+  };
+  recognition.onend = () => {
+    isRecording = false;
+    micBtn.classList.remove('recording');
+    document.getElementById('mic-hint').textContent = 'Mikrofona bas ve konuş';
+  };
+  recognition.start();
+});
+
+renderRecent();
+</script>
+</body>
+</html>
